@@ -1,0 +1,127 @@
+#!/bin/perl
+package Ulcer;
+use strict;
+use warnings FATAL => 'all';
+
+use Data::Dumper;
+use Date::Format;
+use MCE::Flow;
+use MCE::Queue;
+use Sys::Statistics::Linux::MemStats;
+
+my $bus = MCE::Queue->new;
+
+my %state;
+my @processes;
+my %sources;
+
+# Time source
+$sources{time} = sub {
+    while () {
+        my $now = time();
+        $bus->enqueue(+{
+                key => 'time',
+                val => {
+                    pretty => time2str("%Y-%m-%d %H:%M:%S", $now),
+                    seconds => $now,
+                }
+            }
+        );
+        sleep 3;
+    }
+};
+
+$sources{mem} = sub {
+    while () {
+        my $lxs = Sys::Statistics::Linux::MemStats->new;
+        $bus->enqueue(+{
+                key => 'mem',
+                val => $lxs->get,
+            }
+        );
+        sleep 20;
+    }
+};
+
+$sources{acpibat} = sub {
+    while () {
+        my %vals;
+        for my $bat (glob '/sys/class/power_supply/BAT*') {
+            open my $batfile, "$bat/capacity" or next;
+            my $current = <$batfile>;
+            close $batfile;
+
+            chomp $current;
+            $bat =~ s/.*\///;
+            $vals{$bat} = $current;
+        }
+        $bus->enqueue(+{
+                key => 'bat',
+                val => \%vals,
+            });
+        sleep 30;
+    }
+};
+
+sub flatten {
+    my ($h, $prefix) = @_;
+
+    if (ref $h eq 'HASH') {
+        my @subs = map {
+            flatten($h->{$_}, $prefix . '.' . $_)->%*
+        } keys $h->%*;
+
+        return +{ @subs };
+    }
+
+    return +{ $prefix => $h };
+}
+
+sub display {
+    my ($v, $s) = @_;
+
+    my $target = $s;
+    while ($s =~ /\$\{(\.[^\}]+)+\}/g) {
+        my $key = $1;
+        my $repl = "\\\$\\\{$key\\\}";
+        if (defined $v->{$key}) {
+            $target =~ s/$repl/$v->{$key}/;
+        } elsif ($key eq ".state") {
+            print Dumper(flatten(\%state, ""));
+            return;
+        }
+    }
+    print $target . "\n";
+}
+
+# Collector
+push @processes, sub {
+    my $events = 0;
+    my $loops = 0;
+
+    while () {
+        my $iter = 0;
+        do {
+            my $event = $bus->dequeue;
+            $state{$event->{key}} = $event->{val};
+            $events++;
+        } while ($bus->pending && $iter++ < 100);
+
+        $state{collector} = +{
+            iterations => ++$loops,
+            events => $events,
+        };
+
+        display(flatten(\%state, ""), $ARGV[0]);
+    }
+};
+
+die "Usage: $0 <formatstring> <list-of-sources>" unless defined $ARGV[1];
+
+for my $as (split /\s*,\s*/, $ARGV[1]) {
+    if (defined (my $source = $sources{$as})) {
+        push @processes, $source;
+    }
+}
+
+mce_flow {max_workers => 1}, @processes;
