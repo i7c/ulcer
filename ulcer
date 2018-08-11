@@ -15,7 +15,6 @@ my %state;
 my @processes;
 my %sources;
 
-# Time source
 $sources{time} = sub {
     while () {
         my $now = time();
@@ -94,7 +93,6 @@ sub display {
     print $target . "\n";
 }
 
-# Collector
 push @processes, sub {
     my $events = 0;
     my $loops = 0;
