@@ -62,6 +62,65 @@ $sources{acpibat} = sub {
     }
 };
 
+$sources{hlwm} = sub {
+    sub tags_raw {
+        my $raw_tags = `herbstclient tag_status`;
+        $raw_tags =~ s/^\s+//;
+        $raw_tags =~ s/\s+$//;
+        split /\s+/, $raw_tags;
+    }
+
+    sub tags {
+        map {
+            (my $name = $_) =~ s/^.//;
+            $name;
+        } tags_raw();
+    }
+
+    sub tag_status {
+        map {
+            (my $status = $_) =~ s/^(.).+/$1/;
+            (my $name = $_) =~ s/^.//;
+
+            if ($status eq '#') {
+                "[$name]";
+            } elsif ($status eq ':') {
+                ".$name.";
+            } else {
+                " $name ";
+            }
+        } tags_raw();
+    }
+
+    $bus->enqueue(+{
+            key => 'hlwm',
+            val => {
+                tags => {
+                    list => join (" ", tags()),
+                },
+            },
+        });
+
+    my @tags = tags_raw;
+    open my $hc_stdout, "herbstclient --idle tag_changed |";
+    while (my $line = <$hc_stdout>) {
+        chop $line;
+        my ($event, $tag, $monitor) = split /\t/, $line;
+        $bus->enqueue(+{
+                key => 'hlwm',
+                val => {
+                    tags => {
+                        active => $tag,
+                    },
+                    event => {
+                        raw => $line,
+                        name => $event,
+                    }
+                },
+            });
+    }
+};
+
 sub file_content {
     my ($file) = @_;
 
