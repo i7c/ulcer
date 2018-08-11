@@ -46,13 +46,13 @@ $sources{acpibat} = sub {
     while () {
         my %vals;
         for my $bat (glob '/sys/class/power_supply/BAT*') {
-            open my $batfile, "$bat/capacity" or next;
-            my $current = <$batfile>;
-            close $batfile;
-
-            chomp $current;
+            my $capacity = file_content("$bat/capacity");
+            my $status = file_content("$bat/status");
             $bat =~ s/.*\///;
-            $vals{$bat} = $current;
+            $vals{$bat} = {
+                capacity => $capacity,
+                status => $status,
+            };
         }
         $bus->enqueue(+{
                 key => 'bat',
@@ -61,6 +61,17 @@ $sources{acpibat} = sub {
         sleep 30;
     }
 };
+
+sub file_content {
+    my ($file) = @_;
+
+    open my $f, $file or die;
+    my $content = <$f>;
+    close $f;
+
+    chomp $content;
+    $content;
+}
 
 sub flatten {
     my ($h, $prefix) = @_;
