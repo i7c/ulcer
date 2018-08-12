@@ -90,6 +90,13 @@ $sources{hlwm} = sub {
             $bus->enqueue(+{
                     'hlwm.window.title' => $arg,
                 });
+        } elsif ($event eq "urgent") {
+            my @urgent_tags = map {
+                (my $name = $_) =~ s/^.//;
+                $name;
+            } grep /^!/, tags_raw;
+
+            $bus->enqueue(+{ 'hlwm.tags.urgent' => join(" ", @urgent_tags) });
         }
     }
     close $hc_stdout;
