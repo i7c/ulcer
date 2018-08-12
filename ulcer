@@ -87,20 +87,27 @@ $sources{hlwm} = sub {
     $bus->enqueue(+{ 'hlwm.tags.list' => join (" ", tags) });
 
     my @tags = tags_raw;
-    open my $hc_stdout, "herbstclient --idle tag_changed |";
+    open my $hc_stdout, "herbstclient --idle |";
     while (my $line = <$hc_stdout>) {
         chop $line;
-        my ($event, $tag, $monitor) = split /\t/, $line;
-        $bus->enqueue(+{
-                hlwm => {
-                    'tags.active' => $tag,
-                    event => {
-                        raw => $line,
-                        name => $event,
-                    }
-                },
-            });
+        my ($event, $tag, $arg) = split /\t/, $line;
+        if ($event eq "tag_changed") {
+            $bus->enqueue(+{
+                    hlwm => {
+                        'tags.active' => $tag,
+                        event => {
+                            raw => $line,
+                            name => $event,
+                        }
+                    },
+                });
+        } elsif ($event eq "focus_changed" || $event eq "window_title_changed") {
+            $bus->enqueue(+{
+                    'hlwm.window.title' => $arg,
+                });
+        }
     }
+    close $hc_stdout;
 };
 
 sub file_content {
