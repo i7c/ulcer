@@ -19,8 +19,7 @@ $sources{time} = sub {
     while () {
         my $now = time();
         $bus->enqueue(+{
-                key => 'time',
-                val => {
+                time => {
                     pretty => time2str("%Y-%m-%d %H:%M:%S", $now),
                     seconds => $now,
                 }
@@ -33,12 +32,8 @@ $sources{time} = sub {
 $sources{mem} = sub {
     while () {
         my $lxs = Sys::Statistics::Linux::MemStats->new;
-        $bus->enqueue(+{
-                key => 'mem',
-                val => $lxs->get,
-            }
-        );
-        sleep 20;
+        $bus->enqueue(+{ mem => $lxs->get, });
+        sleep 10;
     }
 };
 
@@ -54,11 +49,8 @@ $sources{acpibat} = sub {
                 status => $status,
             };
         }
-        $bus->enqueue(+{
-                key => 'bat',
-                val => \%vals,
-            });
-        sleep 30;
+        $bus->enqueue(+{ bat => \%vals, });
+        sleep 20;
     }
 };
 
@@ -92,14 +84,7 @@ $sources{hlwm} = sub {
         } tags_raw();
     }
 
-    $bus->enqueue(+{
-            key => 'hlwm',
-            val => {
-                tags => {
-                    list => join (" ", tags()),
-                },
-            },
-        });
+    $bus->enqueue(+{ 'hlwm.tags.list' => join (" ", tags) });
 
     my @tags = tags_raw;
     open my $hc_stdout, "herbstclient --idle tag_changed |";
@@ -107,11 +92,8 @@ $sources{hlwm} = sub {
         chop $line;
         my ($event, $tag, $monitor) = split /\t/, $line;
         $bus->enqueue(+{
-                key => 'hlwm',
-                val => {
-                    tags => {
-                        active => $tag,
-                    },
+                hlwm => {
+                    'tags.active' => $tag,
                     event => {
                         raw => $line,
                         name => $event,
@@ -156,7 +138,7 @@ sub display {
         if (defined $v->{$key}) {
             $target =~ s/$repl/$v->{$key}/;
         } elsif ($key eq ".state") {
-            print Dumper(flatten(\%state, ""));
+            print Dumper(\%state);
             return;
         }
     }
@@ -171,16 +153,14 @@ push @processes, sub {
         my $iter = 0;
         do {
             my $event = $bus->dequeue;
-            $state{$event->{key}} = $event->{val};
+            %state = (%state, flatten($event, "")->%*);
             $events++;
         } while ($bus->pending && $iter++ < 100);
 
-        $state{collector} = +{
-            iterations => ++$loops,
-            events => $events,
-        };
+        $state{".ulcer.events"} = $events;
+        $state{".ulcer.loops"} = ++$loops;
 
-        display(flatten(\%state, ""), $ARGV[0]);
+        display(\%state, $ARGV[0]);
     }
 };
 
