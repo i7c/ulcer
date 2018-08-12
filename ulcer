@@ -147,6 +147,8 @@ sub display {
         } elsif ($key eq ".state") {
             print Dumper(\%state);
             return;
+        } else {
+            $target =~ s/$repl//;
         }
     }
     print $target . "\n";
