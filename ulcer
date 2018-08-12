@@ -69,21 +69,6 @@ $sources{hlwm} = sub {
         } tags_raw();
     }
 
-    sub tag_status {
-        map {
-            (my $status = $_) =~ s/^(.).+/$1/;
-            (my $name = $_) =~ s/^.//;
-
-            if ($status eq '#') {
-                "[$name]";
-            } elsif ($status eq ':') {
-                ".$name.";
-            } else {
-                " $name ";
-            }
-        } tags_raw();
-    }
-
     $bus->enqueue(+{ 'hlwm.tags.list' => join (" ", tags) });
 
     my @tags = tags_raw;
