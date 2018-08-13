@@ -105,10 +105,7 @@ $sources{hlwm} = sub {
 sub file_content {
     my ($file) = @_;
 
-    open my $f, $file or die;
-    my $content = <$f>;
-    close $f;
-
+    my $content = do { local( @ARGV, $/ ) = $file; <> };
     chomp $content;
     $content;
 }
