@@ -36,7 +36,7 @@ $sources{mem} = sub {
     }
 };
 
-$sources{acpibat} = sub {
+$sources{acpi} = sub {
     while () {
         my %vals;
         for my $bat (glob '/sys/class/power_supply/BAT*') {
