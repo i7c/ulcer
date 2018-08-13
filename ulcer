@@ -43,13 +43,12 @@ $sources{acpibat} = sub {
         for my $bat (glob '/sys/class/power_supply/BAT*') {
             my $capacity = file_content("$bat/capacity");
             my $status = file_content("$bat/status");
-            $bat =~ s/.*\///;
-            $vals{$bat} = {
+            $vals{$bat =~ s/.*\///r} = {
                 capacity => $capacity,
                 status => $status,
             };
         }
-        $bus->enqueue(+{ bat => \%vals, });
+        $bus->enqueue(+{ bat => \%vals });
         sleep 20;
     }
 };
@@ -62,12 +61,7 @@ $sources{hlwm} = sub {
         split /\s+/, $raw_tags;
     }
 
-    sub tags {
-        map {
-            (my $name = $_) =~ s/^.//;
-            $name;
-        } tags_raw();
-    }
+    sub tags { map { s/^.//r } tags_raw(); }
 
     $bus->enqueue(+{ 'hlwm.tags.list' => join (" ", tags) });
 
@@ -87,14 +81,9 @@ $sources{hlwm} = sub {
                     },
                 });
         } elsif ($event eq "focus_changed" || $event eq "window_title_changed") {
-            $bus->enqueue(+{
-                    'hlwm.window.title' => $arg,
-                });
+            $bus->enqueue(+{ 'hlwm.window.title' => $arg });
         } elsif ($event eq "urgent") {
-            my @urgent_tags = map {
-                (my $name = $_) =~ s/^.//;
-                $name;
-            } grep /^!/, tags_raw;
+            my @urgent_tags = map { s/^.//r } grep /^!/, tags_raw;
 
             $bus->enqueue(+{ 'hlwm.tags.urgent' => join(" ", @urgent_tags) });
         }
@@ -164,10 +153,6 @@ push @processes, sub {
 
 die "Usage: $0 <formatstring> <list-of-sources>" unless defined $ARGV[1];
 
-for my $as (split /\s*,\s*/, $ARGV[1]) {
-    if (defined (my $source = $sources{$as})) {
-        push @processes, $source;
-    }
-}
+push @processes, map { $sources{$_} // () } split /\s*,\s*/, $ARGV[1];
 
 mce_flow {max_workers => 1}, @processes;
