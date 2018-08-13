@@ -38,16 +38,30 @@ $sources{mem} = sub {
 
 $sources{acpi} = sub {
     while () {
-        my %vals;
-        for my $bat (glob '/sys/class/power_supply/BAT*') {
-            my $capacity = file_content("$bat/capacity");
-            my $status = file_content("$bat/status");
-            $vals{$bat =~ s/.*\///r} = {
-                capacity => $capacity,
-                status => $status,
-            };
+        my %batvals;
+        {
+            for my $bat (glob '/sys/class/power_supply/BAT*') {
+                my $capacity = file_content("$bat/capacity");
+                my $status = file_content("$bat/status");
+                $batvals{$bat =~ s/.*\///r} = {
+                    capacity => $capacity,
+                    status => $status,
+                };
+            }
         }
-        $bus->enqueue(+{ bat => \%vals });
+
+        my %tempvals;
+        {
+            for my $zone (glob '/sys/class/thermal/thermal_zone*') {
+                my $temp = file_content("$zone/temp");
+                $tempvals{$zone =~ s/.*\///r} = { temp => $temp / 1000 };
+            }
+        }
+        $bus->enqueue(+{
+                bat => \%batvals,
+                temp => \%tempvals,
+            });
+
         sleep 20;
     }
 };
