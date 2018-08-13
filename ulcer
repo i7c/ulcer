@@ -30,9 +30,9 @@ $sources{time} = sub {
 };
 
 $sources{mem} = sub {
+    my $lxs = Sys::Statistics::Linux::MemStats->new;
     while () {
-        my $lxs = Sys::Statistics::Linux::MemStats->new;
-        $bus->enqueue(+{ mem => $lxs->get, });
+        $bus->enqueue(+{ mem => $lxs->get });
         sleep 10;
     }
 };
