@@ -53,7 +53,7 @@ Examine the state
 -----------------
 To examine all available values, you can run
 
-ulcer '${.state}' <list of plugins>
+ulcer '${.state}' list,of,plugins
 
 The state value is special, as it produces a formatted multi-line dump of the
 internal state.
