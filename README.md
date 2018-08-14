@@ -40,6 +40,8 @@ Every known plugin in the list will be activated. Plugins have their own life
 cycle and their own rate at which they produce events. They do not affect other
 plugins.
 
+To see a list of known plugins, examine the state (as described below).
+
 Example
 -------
 

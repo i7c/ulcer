@@ -150,6 +150,8 @@ push @processes, sub {
     my $loops = 0;
     my %state;
 
+    $state{".ulcer.plugins"} = join(", ", keys %sources);
+
     while () {
         my $iter = 0;
         do {
