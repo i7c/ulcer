@@ -57,3 +57,13 @@ ulcer '${.state}' list,of,plugins
 
 The state value is special, as it produces a formatted multi-line dump of the
 internal state.
+}
+
+Example config for herbstluftwm with lemonbar
+---------------------------------------------
+
+```
+ulcer '%{l} ${.hlwm.window.title}%{r} %{F#f92672}${.hlwm.tags.urgent}%{F-} %{B#fd971f}%{F#000} ${.hlwm.tags.active} %{B-}%{F-} %{F#aafaaf}${.bat.BAT0.capacity}% (${.bat.BAT0.status}) %{F#fd971f}${.temp.thermal_zone0.temp}°C %{F#f92672}mem:${.mem.realfreeper}% %{F-}${.time.pretty} ' \
+    'time,mem,acpi,hlwm' \
+    | lemonbar -B '#272822' -F '#f8f8f2' &
+```
