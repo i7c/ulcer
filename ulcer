@@ -12,7 +12,6 @@ use Sys::Statistics::Linux::MemStats;
 
 my $bus = MCE::Shared->queue();
 
-my @jobs;
 my %sources;
 
 $sources{time} = sub {
@@ -176,6 +175,7 @@ sub collector {
     my %state;
 
     $state{".ulcer.plugins"} = join(", ", keys %sources);
+    $state{".ulcer.deaths"} = 0;
 
     while () {
         my $iter = 0;
@@ -194,12 +194,28 @@ sub collector {
 
 die "Usage: $0 <formatstring> <list-of-sources>" unless defined $ARGV[1];
 
-push @jobs, map { $sources{$_} // () } split /\s*,\s*/, $ARGV[1];
+# Fire up all processes for all wanted plugins while maintaining a map of PIDs
+# to their executed sub
+my %procs = map { MCE::Hobo->new($_)->pid() => $_; }
+    map { $sources{$_} // () } split /\s*,\s*/, $ARGV[1];
 
-my @hobos = map { MCE::Hobo->new($_); } @jobs;
 my $collector_hobo = MCE::Hobo->new(\&collector);
 
-$collector_hobo->join();
-for my $hobo (@hobos) {
-    $hobo->join();
+# Watch processes and pick out dead ones and restart them.
+my $deaths = 0;
+while () {
+    my @victims = MCE::Hobo->list_joinable();
+
+    my @died_subs = map { delete $procs{$_->pid()} } @victims;
+    if (scalar @died_subs > 0) {
+        $deaths += scalar @died_subs;
+        $bus->enqueue({ "ulcer.deaths" => $deaths });
+    }
+    for my $vic (@victims) { $vic->join(); }
+    for my $sub (@died_subs) {
+        # restart processes and update the process map
+        my $hobo = MCE::Hobo->new($sub);
+        $procs{$hobo->pid()} = $sub;
+    }
+    sleep 10;
 }
