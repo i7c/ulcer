@@ -5,14 +5,14 @@ use warnings FATAL => 'all';
 
 use Data::Dumper;
 use Date::Format;
-use MCE::Flow;
-use MCE::Queue;
+use MCE::Hobo;
+use MCE::Shared;
 use Safe;
 use Sys::Statistics::Linux::MemStats;
 
-my $bus = MCE::Queue->new;
+my $bus = MCE::Shared->queue();
 
-my @processes;
+my @jobs;
 my %sources;
 
 $sources{time} = sub {
@@ -170,7 +170,7 @@ sub display {
     print $target . "\n";
 }
 
-push @processes, sub {
+sub collector {
     my $events = 0;
     my $loops = 0;
     my %state;
@@ -194,6 +194,12 @@ push @processes, sub {
 
 die "Usage: $0 <formatstring> <list-of-sources>" unless defined $ARGV[1];
 
-push @processes, map { $sources{$_} // () } split /\s*,\s*/, $ARGV[1];
+push @jobs, map { $sources{$_} // () } split /\s*,\s*/, $ARGV[1];
 
-mce_flow {max_workers => 1}, @processes;
+my @hobos = map { MCE::Hobo->new($_); } @jobs;
+my $collector_hobo = MCE::Hobo->new(\&collector);
+
+$collector_hobo->join();
+for my $hobo (@hobos) {
+    $hobo->join();
+}
