@@ -24,6 +24,7 @@ The format string is what defines ulcer’s output. You can put whatever you wan
 Currently, the "special" ulcer syntax is comprised of this:
 
 * Value placeholders look like this: ${name}
+
   Ulcer will replace such placeholders with their most recent value from the
   state. If the value is undefined, ulcer replaces it with the empty string.
 
@@ -33,6 +34,23 @@ Currently, the "special" ulcer syntax is comprised of this:
   values. Ulcer uses a prefix to flatten structures recursively. Currently, the
   top-level prefix is the empty string, which is why all names start with a .
 
+* Value placeholders with conversions look like this:
+  ```
+    ${name|`conversion`}
+  ```
+
+  Sometimes the source provides values in a different format as you would want
+  to display them. In such cases, you can specify a conversion. A conversion is
+  specified by adding a pipe followed by the conversion code enclosed in
+  backticks. The syntax between backticks is the regular perl syntax. You can
+  access the original value through the `$val` variable. It is also writeable
+  and you can safely modify it, if you so wish.
+
+  Example: Displaying the free memory in MiB:
+
+  ```
+    ${.mem.realfree|`int($val / 1024)`}
+  ```
 
 Plugin list
 -----------

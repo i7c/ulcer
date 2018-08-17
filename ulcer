@@ -7,6 +7,7 @@ use Data::Dumper;
 use Date::Format;
 use MCE::Flow;
 use MCE::Queue;
+use Safe;
 use Sys::Statistics::Linux::MemStats;
 
 my $bus = MCE::Queue->new;
@@ -130,12 +131,36 @@ sub display {
     my ($v, $s) = @_;
 
     my $target = $s;
-    while ($s =~ /\$\{(\.[^\}]+)+\}/g) {
-        my $key = $1;
-        my $repl = "\\\$\\\{$key\\\}";
-        if (defined $v->{$key}) {
-            $target =~ s/$repl/$v->{$key}/;
-        } elsif ($key eq ".state") {
+    while ($s =~ /
+        (?<all>
+            # The entire block matches placeholders like ${name} or, more fancy,
+            # ${name|`out conversion`}
+            # The pipe and the out conversion in backticks are optional, but
+            # the name is mandatory.
+            \$\{
+                # The name may contain any character but } or | which would
+                # both terminate the name part
+                (?<name>[^ \} \| ]+)+
+
+                # The optional out conversion part starts with a pipe and
+                # encloses an out conversion in backticks. We use the backticks
+                # so that }  is allowed in the conversion.
+                (\|`(?<outconv>[^`]*)`)?
+            \}
+        )
+    /gxx) {
+        my $repl = quotemeta($+{all});
+        if (defined $v->{$+{name}}) {
+            my $actual;
+            if (defined $+{outconv}) {
+                my $safe = new Safe;
+                ${$safe->varglob('val')} = $v->{$+{name}};
+                $actual = $safe->reval($+{outconv});
+            } else {
+                $actual = $v->{$+{name}};
+            };
+            $target =~ s/$repl/$actual/;
+        } elsif ($+{name} eq ".state") {
             print Dumper($v);
             return;
         } else {
