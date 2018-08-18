@@ -7,6 +7,21 @@ map can be used to fill in the values in a format string.
 It might not be tailored to, but could be used to feed something like
 https://github.com/LemonBoy/bar
 
+Feature list
+============
+
+v 0.1
+-----
+* Built-in support for time, memory, temperatures, battery
+* Herbstluftwm: show tag list, active tag and urgent tags and current window
+  title
+* Event accumulation for fast event sequences: ulcer uses chunks of events to
+  update the state in case there are multiple events waiting in the queue. This
+  ought to increase processing speed.
+* Event sources are completely decoupled; each can have its own event rate
+* Moderate memory footprint, no process spamming. Ulcer attempts to run as
+  little external commands as possible
+* Output conversions: transform values when displaying them
 
 Usage
 =====
