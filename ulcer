@@ -5,6 +5,7 @@ use warnings FATAL => 'all';
 
 use Data::Dumper;
 use Date::Format;
+use MCE::Signal;
 use MCE::Hobo;
 use MCE::Shared;
 use Safe;
@@ -200,6 +201,8 @@ my %procs = map { MCE::Hobo->new($_)->pid() => $_; }
     map { $sources{$_} // () } split /\s*,\s*/, $ARGV[1];
 
 my $collector_hobo = MCE::Hobo->new(\&collector);
+
+$SIG{USR1} = sub { MCE::Signal->stop_and_exit(0) };
 
 # Watch processes and pick out dead ones and restart them.
 my $deaths = 0;

@@ -28,6 +28,7 @@ v 0.2 (upcoming)
 * Process watchdog: Ulcer now surveils the child processes it spawns and
   restarts failed ones. Poorly written event sources can still provide their
   services more or less reliably.
+* Graceful shutdown can be initiated via SIGUSR1
 
 Usage
 =====
