@@ -29,6 +29,8 @@ v 0.2 (upcoming)
   restarts failed ones. Poorly written event sources can still provide their
   services more or less reliably.
 * Graceful shutdown can be initiated via SIGUSR1
+* hlwm plugin learned to respect the quit_panel and reload hooks, for which it
+  will shutdown the entire ulcer process
 
 Usage
 =====

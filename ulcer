@@ -3,6 +3,8 @@ package Ulcer;
 use strict;
 use warnings FATAL => 'all';
 
+my $main_pid = $$;
+
 use Data::Dumper;
 use Date::Format;
 use MCE::Signal;
@@ -14,6 +16,10 @@ use Sys::Statistics::Linux::MemStats;
 my $bus = MCE::Shared->queue();
 
 my %sources;
+
+sub ulcer_stop {
+    kill 'USR1', $main_pid;
+}
 
 $sources{time} = sub {
     while () {
@@ -100,6 +106,8 @@ $sources{hlwm} = sub {
             my @urgent_tags = map { s/^.//r } grep /^!/, tags_raw;
 
             $bus->enqueue(+{ 'hlwm.tags.urgent' => join(" ", @urgent_tags) });
+        } elsif ($event eq "quit_panel" || $event eq "reload") {
+            ulcer_stop;
         }
     }
     close $hc_stdout;
