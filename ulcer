@@ -184,7 +184,6 @@ sub collector {
     my %state;
 
     $state{".ulcer.plugins"} = join(", ", keys %sources);
-    $state{".ulcer.deaths"} = 0;
 
     while () {
         my $iter = 0;
@@ -214,6 +213,7 @@ $SIG{USR1} = sub { MCE::Signal->stop_and_exit(0) };
 
 # Watch processes and pick out dead ones and restart them.
 my $deaths = 0;
+$bus->enqueue({ "ulcer.deaths" => $deaths });
 while () {
     my @victims = MCE::Hobo->list_joinable();
 
