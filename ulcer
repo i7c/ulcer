@@ -5,6 +5,7 @@ use warnings FATAL => 'all';
 
 my $main_pid = $$;
 
+use Config::Simple;
 use Data::Dumper;
 use Date::Format;
 use MCE::Signal;
@@ -16,6 +17,9 @@ use Sys::Statistics::Linux::MemStats;
 my $bus = MCE::Shared->queue();
 
 my %sources;
+
+my %config;
+Config::Simple->import_from("$ENV{HOME}/.config/ulcer/config", \%config);
 
 sub ulcer_stop {
     kill 'USR1', $main_pid;
@@ -200,12 +204,14 @@ sub collector {
     }
 };
 
-die "Usage: $0 <formatstring> <list-of-sources>" unless defined $ARGV[1];
+my @plugin_list = defined $ARGV[1]
+    ? split /\s*,\s*/, $ARGV[1]
+    : ($config{'ulcer.plugins'} // [])->@*;
 
 # Fire up all processes for all wanted plugins while maintaining a map of PIDs
 # to their executed sub
 my %procs = map { MCE::Hobo->new($_)->pid() => $_; }
-    map { $sources{$_} // () } split /\s*,\s*/, $ARGV[1];
+    map { $sources{$_} // () } @plugin_list;
 
 my $collector_hobo = MCE::Hobo->new(\&collector);
 
