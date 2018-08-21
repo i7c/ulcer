@@ -23,7 +23,7 @@ v 0.1
   little external commands as possible
 * Output conversions: transform values when displaying them
 
-v 0.2 (upcoming)
+v 0.2
 ----------------
 * Process watchdog: Ulcer now surveils the child processes it spawns and
   restarts failed ones. Poorly written event sources can still provide their
