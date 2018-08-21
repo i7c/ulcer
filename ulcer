@@ -95,7 +95,11 @@ $sources{hlwm} = sub {
 
     sub tags { map { s/^.//r } tags_raw(); }
 
-    $bus->enqueue(+{ 'hlwm.tags.list' => join (" ", tags) });
+    $bus->enqueue(+{ 'hlwm.tags' => {
+                list => join (" ", tags),
+                active => map { $_ =~ s/^.//r } grep /^#/, tags_raw,
+            }
+        });
 
     my @tags = tags_raw;
     open my $hc_stdout, "herbstclient --idle |";

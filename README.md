@@ -31,6 +31,8 @@ v 0.2 (upcoming)
 * Graceful shutdown can be initiated via SIGUSR1
 * hlwm plugin learned to respect the quit_panel and reload hooks, for which it
   will shutdown the entire ulcer process
+* Improved hlwm support: ulcer now sets the initial state for
+  "hlwm.tags.active" correctly
 * Config file support: both options (plugin list and template string) that were
   specified via command line args so far, can now also be specified via a
   config file.
