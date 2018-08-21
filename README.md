@@ -34,6 +34,22 @@ v 0.2 (upcoming)
 * Config file support: both options (plugin list and template string) that were
   specified via command line args so far, can now also be specified via a
   config file.
+* "Section" support in the template string: Instead of composing the entire
+  template string in one big literal, the user can now specify sections. See the
+  example config below for details. In the config file section "sections", the
+  user may define arbitrary keys and assign them parts of a template string.
+  Those bits can then be embedded in other bits or in the root template string
+  like so: `~[key]~`
+
+  "Embed in other bits" means, that ulcer resolves these references
+  recursively.  So you can define keys and use other keys in the string.
+
+  Note, that ulcer don't gives much about endless recursions. The user is
+  responsible. If you define endless recursive patterns, ulcer will most likely
+  produce a high CPU load and do nothing else.
+
+  If the user wants to use the literal string `~[something]~`, they’re doomed at
+  the moment.
 
 Usage
 =====
@@ -104,11 +120,22 @@ The state value is special, as it produces a formatted multi-line dump of the
 internal state.
 }
 
-Example config for herbstluftwm with lemonbar
+Example config for herbstluftwm with lemonbar (`$HOME/.config/ulcer/config`)
 ---------------------------------------------
 
 ```
-ulcer '%{l} ${.hlwm.window.title}%{r} %{F#f92672}${.hlwm.tags.urgent}%{F-} %{B#fd971f}%{F#000} ${.hlwm.tags.active} %{B-}%{F-} %{F#aafaaf}${.bat.BAT0.capacity}% (${.bat.BAT0.status}) %{F#fd971f}${.temp.thermal_zone0.temp}°C %{F#f92672}mem:${.mem.realfreeper}% %{F-}${.time.pretty} ' \
-    'time,mem,acpi,hlwm' \
-    | lemonbar -B '#272822' -F '#f8f8f2' &
+[ulcer]
+plugins=hlwm,time,acpi,mem
+template='~[left]~~[right]~'
+
+[sections]
+left = '%{l} ~[title]~'
+right = '%{r}~[hlwm]~ ~[bat]~ ~[temp]~ ~[mem]~ ~[time]~ '
+
+bat = '${B-}%{F#aafaaf}${.bat.BAT0.capacity}% (${.bat.BAT0.status})%{B-}%{F-}'
+hlwm = '%{B#f92672}%{F#000}${.hlwm.tags.urgent|`length($val) > 0 ? " $val " : ""`}%{F-}%{B-} %{B#fd971f}%{F#000} ${.hlwm.tags.active} %{B-}%{F-}'
+mem = '%{B-}%{F#f92672}${.mem.realfree|`int($val / 1024)`} MiB%{B-}%{F-}'
+temp = '%{B-}%{F#fd971f}${.temp.thermal_zone0.temp}°C ${.temp.thermal_zone1.temp}°C ${.temp.thermal_zone2.temp}°C ${.temp.thermal_zone3.temp}°C%{B-}%{F-}'
+time = '%{B-}${.time.pretty}%{B-}%{F-}'
+title = '${.hlwm.window.title}'
 ```

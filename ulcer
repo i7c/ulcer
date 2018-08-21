@@ -190,6 +190,22 @@ sub display {
     print $target . "\n";
 }
 
+sub expand_template {
+    my ($template) = @_;
+
+    while ($template =~ /
+        (?<repl>
+            ~\[
+                (?<section>[^]]*)
+            \]~)
+    /gxx) {
+        my $repl = quotemeta($+{repl});
+        my $actual = $config{"sections." . $+{section}} // "UNDEF:" . $+{section};
+        $template =~ s/$repl/$actual/;
+    }
+    $template;
+}
+
 sub collector {
     my $events = 0;
     my $loops = 0;
@@ -197,6 +213,7 @@ sub collector {
 
     $state{".ulcer.plugins"} = join(", ", keys %sources);
 
+    my $expanded_template = expand_template($template);
     while () {
         my $iter = 0;
         do {
@@ -208,7 +225,7 @@ sub collector {
         $state{".ulcer.events"} = $events;
         $state{".ulcer.loops"} = ++$loops;
 
-        display(\%state, $template);
+        display(\%state, $expanded_template);
     }
 };
 
