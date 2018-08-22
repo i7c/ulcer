@@ -18,6 +18,8 @@ my $bus = MCE::Shared->queue();
 
 my %sources;
 
+my $out_file = *STDOUT;
+
 my %config;
 Config::Simple->import_from("$ENV{HOME}/.config/ulcer/config", \%config);
 
@@ -27,6 +29,11 @@ my $template = defined $ARGV[0]
 my @plugin_list = defined $ARGV[1]
     ? split /\s*,\s*/, $ARGV[1]
     : ($config{'ulcer.plugins'} // [])->@*;
+
+if (grep /bar/, @plugin_list) {
+    my $bar_command = $config{'bar.command'} // "lemonbar";
+    open $out_file, "| $bar_command";
+}
 
 
 sub ulcer_stop {
@@ -191,7 +198,7 @@ sub display {
             $target =~ s/$repl//;
         }
     }
-    print $target . "\n";
+    print $out_file $target . "\n";
 }
 
 sub expand_template {

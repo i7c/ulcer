@@ -53,6 +53,14 @@ v 0.2
   If the user wants to use the literal string `~[something]~`, they’re doomed at
   the moment.
 
+v 0.3 (upcoming)
+-----
+* ulcer learned built-in support for a target process. Instead of writing to
+  stdout, ulcer can now run a subprocess (for example a bar) that expects input
+  on STDIN. This functionality can be enabled by using the "bar" plugin. The
+  default is "lemonbar". The command can be changed or specialized by setting the
+  "command" option in the "bar" section (i.e. command.bar).
+
 Usage
 =====
 
@@ -127,7 +135,7 @@ Example config for herbstluftwm with lemonbar (`$HOME/.config/ulcer/config`)
 
 ```
 [ulcer]
-plugins=hlwm,time,acpi,mem
+plugins=hlwm,time,acpi,mem,bar
 template='~[left]~~[right]~'
 
 [sections]
@@ -140,4 +148,7 @@ mem = '%{B-}%{F#f92672}${.mem.realfree|`int($val / 1024)`} MiB%{B-}%{F-}'
 temp = '%{B-}%{F#fd971f}${.temp.thermal_zone0.temp}°C ${.temp.thermal_zone1.temp}°C ${.temp.thermal_zone2.temp}°C ${.temp.thermal_zone3.temp}°C%{B-}%{F-}'
 time = '%{B-}${.time.pretty}%{B-}%{F-}'
 title = '${.hlwm.window.title}'
+
+[bar]
+command = 'lemonbar -B #272822 -F #f8f8f2'
 ```
